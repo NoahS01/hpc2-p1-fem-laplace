@@ -3,24 +3,24 @@ function [integral_u, integral_dn] = computeCircleIntegrals( ...
 
 %% Kreis diskretisieren
 
-theta = linspace(0, 2*pi, N);
+theta = linspace(0, 2*pi, N+1);
+theta = theta(1:N);
 circle = [cx + radius*cos(theta); cy + radius*sin(theta)]';
 
-ds = 2*pi*radius / (N-1);
+ds = 2*pi*radius / (N);
 
 %% Suchparameter
 
 rSearch = 2*hMesh;
-buffer = 2*hMesh;
 
 %% Suchstruktur vorbereiten
 
 node2elem = buildNode2Elem(elements, size(coordinates,1));
 
-xmin = cx - radius - buffer;
-xmax = cx + radius + buffer;
-ymin = cy - radius - buffer;
-ymax = cy + radius + buffer;
+xmin = cx - radius - rSearch;
+xmax = cx + radius + rSearch;
+ymin = cy - radius - rSearch;
+ymax = cy + radius + rSearch;
 
 localNodes = find( ...
     coordinates(:,1) >= xmin & coordinates(:,1) <= xmax & ...
@@ -32,65 +32,57 @@ coeffElem = computeElementCoefficients(coordinates, elements, u);
 
 %% Kreiswerte berechnen
 
-uCircle = zeros(N,1);
-dnCircle = zeros(N,1);
-
+kCircle = zeros(N,1);
 kLast = 0;
 
 for i = 1:N
-
     p = circle(i,:);
 
     k = 0;
 
-    % Zuerst prüfen, ob der Punkt noch im zuletzt gefundenen Dreieck liegt
+    % zuerst letztes Dreieck testen
     if kLast > 0
-
         PLast = coordinates(elements(kLast,:),:);
 
         if pointInTriangle(p, PLast)
             k = kLast;
         end
-
     end
 
-    % Falls nicht: lokale Suche
+    % lokale Suche als Fallback
     if k == 0
-
         k = findTriangleIndexLocal( ...
             p, coordinates, elements, node2elem, rSearch, localNodes);
-
     end
 
+    kCircle(i) = k;
     kLast = k;
-
-    coeff = coeffElem(k,:);
-
-    % u_h(x,y) = a + b*x + c*y
-    uCircle(i) = coeff(1) + coeff(2)*p(1) + coeff(3)*p(2);
-
-    % Normalenvektor radial nach außen
-    n_vec = (p - [cx, cy]) / radius;
-
-    % grad(u_h) = [b, c]
-    dnCircle(i) = coeff(2)*n_vec(1) + coeff(3)*n_vec(2);
-
 end
+
+% Update: vektorisierte Berechnung, statt in for-Schleife
+coeff = coeffElem(kCircle,:);
+
+% Funktionswerte
+uCircle = coeff(:,1) ...
+        + coeff(:,2).*circle(:,1) ...
+        + coeff(:,3).*circle(:,2);
+
+% Normalenvektoren auf dem Kreis
+normals = [(circle(:,1)-cx)/radius, ...
+           (circle(:,2)-cy)/radius];
+
+% Normalenableitung
+dnCircle = coeff(:,2).*normals(:,1) ...
+         + coeff(:,3).*normals(:,2);
+
+
 
 %% Integral von u über den Kreis
 
-sum_u = 0;
-
-for i = 1:N-1
-    sum_u = sum_u + 0.5 * (uCircle(i) + uCircle(i+1));
-end
-
-integral_u = sum_u * ds;
+integral_u  = ds * sum(uCircle);
 
 %% Integral der Normalenableitung
 
-sum_dn = sum(dnCircle(1:N-1));
-
-integral_dn = sum_dn * ds;
+integral_dn = ds * sum(dnCircle);
 
 end
