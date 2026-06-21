@@ -4,7 +4,8 @@ close all
 
 %% Geometrie und Mesh
 
-[coordinates, elements, boundary, dirichlet, neumann, hMesh] = createMesh(true);
+hMesh = 0.3;
+[coordinates, elements, boundary, dirichlet, neumann] = createMesh(true, hMesh);
 
 %% Kreis für Linienintegrale
 
@@ -18,8 +19,8 @@ N = 2000;
 f = @(x) zeros(size(x,1),1);
 g = @(x) zeros(size(x,1),1);
 
-nodes5 = unique(boundary{6}(:));
-nodes3 = unique(boundary{13}(:));
+nodes5 = unique(boundary{13}(:));
+nodes3 = unique(boundary{6}(:));
 nodes7 = unique([boundary{14}(:); boundary{15}(:)]);
 
 coords5 = coordinates(nodes5,:);
