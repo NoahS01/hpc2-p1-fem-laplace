@@ -1,10 +1,5 @@
-function [coordinates, elements, boundary, dirichlet, neumann, hMesh] = createMesh(plotMesh)
-
-if nargin < 1
-    plotMesh = false;
-end
-
-%% Punkte A, L, K, J, I, H, G, F, E, D, D', C, B
+function [coordinates, elements, boundary, dirichlet, neumann] = createMesh(plotMesh, hMesh)
+%% Punkte A, L, K, J, I, H, G, F, E, D, D', C, By
 
 coordinates0 = [
     0,  0;    % A
@@ -40,8 +35,6 @@ g = [
 
 %% Mesh erzeugen
 
-hMesh = 0.3;
-
 [p,e,t] = initmesh(g, 'hmax', hMesh);
 
 elements = t(1:3,:)';
@@ -76,6 +69,7 @@ dirichlet = [
 ];
 
 neumann = [
+    boundary{1};
     boundary{2};
     boundary{3};
     boundary{4};
@@ -88,7 +82,7 @@ neumann = [
     boundary{12}
 ];
 
-%% Optionaler Mesh-Plot
+%% Mesh-Plot
 
 if plotMesh
 
